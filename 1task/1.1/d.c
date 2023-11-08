@@ -54,7 +54,3 @@ int main() {
 
     return 0;
 }
-
-// пункт e)  watch -d -n1 cat /proc/pid/maps
-
-// пункт f) strace ./thread
