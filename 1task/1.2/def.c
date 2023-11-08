@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define ERROR_CODE 1
+
 
 void* routine() {
     printf("tid%d pthread_self()=%ld\n", gettid(), pthread_self());
@@ -18,14 +18,14 @@ int main() {
     if (err1) {
         fprintf(stderr, "main: pthread_attr_init() failed: %s\n", strerror(err1));
         pthread_attr_destroy(&attrs);
-        return ERROR_CODE;
+        return -1;
     }
 
     const int err2 = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
     if (err2) {
         fprintf(stderr, "main: pthread_attr_setdetachstate() failed: %s\n", strerror(err2));
         pthread_attr_destroy(&attrs);
-        return ERROR_CODE;
+        return -1;
     }
 
     while(1) {
@@ -35,7 +35,7 @@ int main() {
         if (err) {
             fprintf(stderr, "main: pthread_create() failed: %s\n", strerror(err));
             pthread_attr_destroy(&attrs);
-            return ERROR_CODE;
+            return -1;
         }
     }
 }
