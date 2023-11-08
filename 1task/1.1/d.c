@@ -41,7 +41,7 @@ int main() {
         err = pthread_create(&tid, NULL, my_thread, NULL);
         if (err) {
             fprintf(stderr, "main: pthread_create() failed: %s\n", strerror(err));
-            return EXIT_FAILURE;
+            return -1;
         }
     }
 
@@ -49,10 +49,10 @@ int main() {
     
     if (err) {
         fprintf(stderr, "main: pthread_join() failed %s\n", strerror(err));
-        return EXIT_FAILURE;
+        return -1;
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 // пункт e)  watch -d -n1 cat /proc/pid/maps
