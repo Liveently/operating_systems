@@ -15,29 +15,14 @@ void *mythread(void *arg) {
 }
 
 int main() {
-  // struct ThreadParams params = {1, "Hello from thread"};
+ struct ThreadParams params = {1, "Hello from thread"};
 
-  // pthread_t tid;
-
-  // if (pthread_create(&tid, NULL, mythread, &params) != 0) {
-  //   perror("pthread_create");
-  //   return 1;
-  // }
-
-  // if (pthread_join(tid, NULL) != 0) {
-  //   perror("pthread_join");
-  //   return 1;
-  // }
-
-  struct ThreadParams *params =
-      (struct ThreadParams *)malloc(sizeof(struct ThreadParams));
-  params->num = 1;
-  params->message = "Hello from thread";
+  
   pthread_attr_t attr;
   pthread_t tid;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  if (pthread_create(&tid, &attr, mythread, params) != 0) {
+  if (pthread_create(&tid, &attr, mythread, &params) != 0) {
     perror("pthread_create");
     return 1;
   }
