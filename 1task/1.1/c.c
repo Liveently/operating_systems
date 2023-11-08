@@ -7,7 +7,6 @@
 #include <stdlib.h>
 
 
-
 static int global_value = 10;
 
 void* my_thread(void *arg) {
