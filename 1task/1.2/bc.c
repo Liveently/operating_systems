@@ -21,11 +21,8 @@ int main() {
     }
 
     void* ret_value;
-    const int err2 = pthread_join(tid, &ret_value);
-    if (err2) {
-        fprintf(stderr, "main pthread_join() failed: %s\n", strerror(err2));
-        return -1;
-    }
+   pthread_join(tid, &ret_value);
+
 
     //printf("Returned number from created pthread is %ld\n", (long)ret_value);
     printf("Returned string from created pthread is \"%s\"\n", (char*)ret_value);
