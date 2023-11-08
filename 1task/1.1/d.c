@@ -37,7 +37,7 @@ int main() {
 
     pthread_t tid;
     int err;
-    for(int i = 0; i < COUNT_THREAD; ++i) {
+    for(int i = 0; i < 5; ++i) {
         err = pthread_create(&tid, NULL, my_thread, NULL);
         if (err) {
             fprintf(stderr, "main: pthread_create() failed: %s\n", strerror(err));
@@ -45,7 +45,7 @@ int main() {
         }
     }
 
-   pthread_join(tid, &ret_val);
+   pthread_join(tid, NULL);
     
     if (err) {
         fprintf(stderr, "main: pthread_join() failed %s\n", strerror(err));
