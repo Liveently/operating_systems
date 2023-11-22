@@ -5,6 +5,13 @@
 
 void* routine() {
 
+
+    const int err = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+    if (err) {
+        fprintf(stderr, "child: pthread_setcanceltype() failed: %s\n", strerror(err));
+        return NULL;
+    }
+     
      unsigned int i = 0;
 
      while(1){
