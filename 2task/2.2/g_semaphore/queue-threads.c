@@ -7,7 +7,6 @@
 #include <sched.h>
 
 #include "queue.h"
-#include "queue.c"
 
 #define RED "\033[41m"
 #define NOCOLOR "\033[0m"
