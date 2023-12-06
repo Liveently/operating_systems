@@ -1,39 +1,40 @@
-#ifndef __FITOS_QUEUE_H__
-#define __FITOS_QUEUE_H__
-
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sched.h>
 
-typedef struct _QueueNode {
-    int val;
-    struct _QueueNode *next;
-} qnode_t;
+#include "queue.h"
 
-typedef struct _Queue {
-    qnode_t *first;
-    qnode_t *last;
+int main() {
+    queue_t *q;
 
-    pthread_t qmonitor_tid;
+    printf("main: [%d %d %d]\n", getpid(), getppid(), gettid());
 
-    int count;
-    int max_count;
+    q = queue_init(1000);
 
-    // queue statistics
-    long add_attempts;
-    long get_attempts;
-    long add_count;
-    long get_count;
-} queue_t;
+    for (int i = 0; i < 10; i++) {
+        int ok = queue_add(q, i);
 
-queue_t* queue_init(int max_count);
-void queue_destroy(queue_t *q);
-int queue_add(queue_t *q, int val);
-int queue_get(queue_t *q, int *val);
-void queue_print_stats(queue_t *q);
+        printf("ok %d: add value %d\n", ok, i);
 
-#endif		// __FITOS_QUEUE_H__
+        queue_print_stats(q);
+    }
+
+    for (int i = 0; i < 12; i++) {
+        int val = -1;
+        int ok = queue_get(q, &val);
+
+        printf("ok: %d: get value %d\n", ok, val);
+
+        queue_print_stats(q);
+    }
+
+    queue_destroy(q);
+
+    return 0;
+}
