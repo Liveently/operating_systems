@@ -7,13 +7,12 @@
 #include <signal.h>
 #include <unistd.h>
 #include <errno.h>
-#include <linux/futex.h>
 #include <syscall.h>
 
 #define PAGE_SIZE 4096
 #define STACK_SIZE (PAGE_SIZE * 5)
 
-typedef struct {
+typedef struct { //структурка, которая представляет поток
     int     id;
     void    *(*start_routine)(void *);
     void    *arg;
@@ -22,14 +21,11 @@ typedef struct {
 
     volatile int finished;
     volatile int joined;
-    int futex;
 } mythread_struct;
 
 typedef mythread_struct* mythread_t;
 
-int futex(int *uaddr, int futex_op, int val) {
-    return syscall(SYS_futex, uaddr, futex_op, val,NULL, NULL, 0);
-}
+
 
 int thread_start(void *arg) {
     mythread_struct *mythread = (mythread_struct*)arg;
@@ -37,15 +33,7 @@ int thread_start(void *arg) {
     mythread->finished = 0;
     mythread->return_value = mythread->start_routine(mythread->arg);
     mythread->finished = 1;
-
-    mythread->futex = 1;
-    futex(&mythread->futex, FUTEX_WAKE, 1);
-
-    while (!mythread->joined) {
-        // sched_yield();
-        futex(&mythread->futex, FUTEX_WAIT, 0);
-    }
-
+    
     return 0;
 }
 
@@ -56,15 +44,17 @@ int mythread_create(mythread_t *tid, void *(*start_routine)(void *), void *arg) 
 
     mythread_id += 1;
 
-    // Create stack
+    // Создаём стек
     void* mythread_stack;
-    mythread_stack = mmap(NULL, STACK_SIZE, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    mythread_stack = mmap(NULL, STACK_SIZE, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0); //выделяет стек
     if (mythread_stack == MAP_FAILED) {
         perror("mmap");
         mythread_id -= 1;
         return -1;
     }
 
+    
+    //заполняем структурку
     mythread = (mythread_struct*)((char*)mythread_stack + STACK_SIZE - sizeof(mythread_struct));
     mythread->id            = mythread_id;
     mythread->stack         = mythread_stack;
@@ -73,14 +63,13 @@ int mythread_create(mythread_t *tid, void *(*start_routine)(void *), void *arg) 
     mythread->arg           = arg;
     mythread->finished      = 0;
     mythread->joined        = 0;
-    mythread->futex         = 0;
 
     int flags = CLONE_VM|CLONE_FILES|CLONE_SIGHAND|
                 CLONE_THREAD|CLONE_FS|SIGCHLD|
                 CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID|
                 CLONE_SYSVSEM;
     void* child_stack = (void*)mythread;
-    int pid = clone(thread_start, child_stack, flags, mythread);
+    int pid = clone(thread_start, child_stack, flags, mythread); 
     if (pid == -1) {
         perror("clone");
         munmap(mythread->stack, STACK_SIZE);
@@ -96,18 +85,14 @@ int mythread_join(mythread_t tid, void** returnValue) {
     mythread_struct* mythread = tid;
 
     while (!mythread->finished) {
-        // sched_yield();
-        futex(&mythread->futex, FUTEX_WAIT, 1);
+
     }
 
     mythread->joined = 1;
     if (returnValue != NULL) {
         *returnValue = mythread->return_value;
     }
-
-    mythread->futex = 0;
-    futex(&mythread->futex, FUTEX_WAKE, 0);
-
+    
     munmap(mythread->stack, STACK_SIZE);
     return 0;
 }
@@ -135,18 +120,18 @@ int main() {
         return 1;
     }
 
-    mythread_t tid3;
+    mythread_t tid2;
     int* param = (int*)malloc(sizeof(int));
     *param = 10;
-    int result3 = mythread_create(&tid3, myFunc2, (void*)param);
+    int result3 = mythread_create(&tid2, myFunc2, (void*)param);
     if (result3 != 0) {
         printf("Ошибка создания потока\n");
         return 1;
     }
 
     void* retValue;
-    mythread_join(tid3, &retValue);
-    printf("tid3 result: %d\n", *((int*)retValue));
+    mythread_join(tid2, &retValue);
+    printf("tid2 result: %d\n", *((int*)retValue));
 
     mythread_join(tid, NULL);
 
