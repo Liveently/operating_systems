@@ -36,7 +36,6 @@ public class GetPlacesAndDescr implements Runnable {
         return new JSONObject(response.body().string()).getJSONArray("features");
     }
     public void getDescriptions(JSONArray features) throws IOException, JSONException {
-        OkHttpClient client = new OkHttpClient();
 
         System.out.println("");
         System.out.println("Interested places in this area:");
