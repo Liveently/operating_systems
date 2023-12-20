@@ -101,7 +101,7 @@ int queue_add(queue_t *q, int val) {
     }
     q->count++;
     q->add_count++;
-    operation = READ;
+ //   operation = READ;
     pthread_cond_signal(&condition_variable);
     pthread_mutex_unlock(&mutex);
 
@@ -134,7 +134,7 @@ int queue_get(queue_t *q, int *val) {
     free(tmp);
     q->count--;
     q->get_count++;
-    operation = WRITE;
+  //  operation = WRITE;
     pthread_cond_signal(&condition_variable);
     pthread_mutex_unlock(&mutex);
 
