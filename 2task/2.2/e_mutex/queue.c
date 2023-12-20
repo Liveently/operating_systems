@@ -1,49 +1,7 @@
-#define _GNU_SOURCE
-
-#include <sys/syscall.h>
-#include <linux/futex.h>
 #include "queue.h"
 
-typedef struct {
-    int lock;  //1 - unlock, 0 - lock
-} mutex_t;
 
-mutex_t *mutex;
-
-void mutex_init(mutex_t *m) {
-    m->lock = 1;
-}
-
-static int futex(int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, int val3) {
-    return syscall(SYS_futex, uaddr, futex_op, val, timeout, uaddr, val3);
-}
-
-void mutex_lock(mutex_t *m) {
-    while (1) {
-        int one = 1;
-        if (atomic_compare_exchange_strong(&m->lock, &one, 0)) {
-            break;
-        }
-        int err = futex(&m->lock, FUTEX_WAIT, 0, NULL, NULL, 0);
-        if (err == -1 && errno != EAGAIN){
-            printf("Futex wait failed");
-            abort();
-        }
-        //usleep(100);
-    }
-}
-
-void mutex_unlock(mutex_t *m) {
-    int zero = 0;
-    if(atomic_compare_exchange_strong(&m->lock, &zero, 1)) {
-        int err = futex(&m->lock, FUTEX_WAKE, 1, NULL, NULL, 0);
-        if (err == -1) {
-            printf("Futex wake failed");
-            abort();
-        }
-    }
-
-}
+pthread_mutex_t mutex; // Заменим семафор на мьютекс
 
 void *qmonitor(void *arg) {
     queue_t *q = (queue_t *) arg;
@@ -55,16 +13,15 @@ void *qmonitor(void *arg) {
         // usleep(5000);
         sleep(1);
     }
-
     return NULL;
 }
 
 queue_t *queue_init(int max_count) {
 
     int err;
-    mutex = malloc(sizeof(mutex_t));
-    mutex_init(mutex);
-    queue_t *q = malloc(sizeof(queue_t));
+    pthread_mutex_init(&mutex, NULL); // Инициализируем мьютекс
+
+    queue_t *q = (queue_t *)malloc(sizeof(queue_t));
     if (!q) {
         printf("Cannot allocate memory for a queue\n");
         abort();
@@ -99,27 +56,24 @@ void queue_destroy(queue_t *q) {
 }
 
 int queue_add(queue_t *q, int val) {
-    mutex_lock(mutex);
-    //usleep(1);
+    pthread_mutex_lock(&mutex); // Захватываем мьютекс
     q->add_attempts++;
 
     assert(q->count <= q->max_count);
 
     if (q->count == q->max_count) {
-        mutex_unlock(mutex);
+        pthread_mutex_unlock(&mutex); // Освобождаем мьютекс
         return 0;
     }
 
-    qnode_t *new = malloc(sizeof(qnode_t));
+    qnode_t *new = (qnode_t *)malloc(sizeof(qnode_t));
     if (!new) {
         printf("Cannot allocate memory for new node\n");
-        mutex_unlock(mutex);
         abort();
     }
 
     new->val = val;
     new->next = NULL;
-
 
     if (!q->first)
         q->first = q->last = new;
@@ -129,19 +83,18 @@ int queue_add(queue_t *q, int val) {
     }
     q->count++;
     q->add_count++;
-    mutex_unlock(mutex);
-
+    pthread_mutex_unlock(&mutex); // Освобождаем мьютекс
     return 1;
 }
 
 int queue_get(queue_t *q, int *val) {
-    mutex_lock(mutex);
+    pthread_mutex_lock(&mutex); // Захватываем мьютекс
     q->get_attempts++;
 
     assert(q->count >= 0);
 
     if (q->count == 0) {
-        mutex_unlock(mutex);
+        pthread_mutex_unlock(&mutex); // Освобождаем мьютекс
         return 0;
     }
 
@@ -153,8 +106,7 @@ int queue_get(queue_t *q, int *val) {
     free(tmp);
     q->count--;
     q->get_count++;
-    mutex_unlock(mutex);
-
+    pthread_mutex_unlock(&mutex); // Освобождаем мьютекс
     return 1;
 }
 
